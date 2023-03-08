@@ -14,34 +14,33 @@ import (
 type CPUObject struct {
 	Model   string  // CPU model name.
 	Speed   float64 // CPU speed in MHz.
-	Load    string  // CPU load as a percentage string.
+	Load    float64 // CPU load as a percentage string.
 	Cores   int32
 	Threads int32
 }
 
 // CPUStat returns a CPUObject with CPU model name, speed, and load.
-func CPUStat() CPUObject {
+func CPUStat() *CPUObject {
+
+	fmt.Println("CPU")
 	// Use channels to concurrently retrieve CPU model name, speed, and load.
-	cpuMod := make(chan string)
-	cpuLoad := make(chan string)
+	cpuModel := make(chan string)
+	cpuLoad := make(chan float64)
 	cpuSpeed := make(chan float64)
 	cpuThreads := make(chan int32)
 	cpuCores := make(chan int32)
-	// defer closing all channels
-	defer close(cpuMod)
-	defer close(cpuLoad)
-	defer close(cpuSpeed)
-	defer close(cpuThreads)
-	defer close(cpuCores)
 
-	go getCPUModel(cpuMod)
+	// defer closing all channels
+	defer CloseChannels(cpuModel, cpuLoad, cpuSpeed, cpuThreads, cpuCores)
+
+	go getCPUModel(cpuModel)
 	go getCPULoad(cpuLoad)
 	go getCPUSpeed(cpuSpeed)
 	go getCPUThreads(cpuThreads)
 	go getCPUCores(cpuCores)
 
-	return CPUObject{
-		Model:   <-cpuMod,
+	return &CPUObject{
+		Model:   <-cpuModel,
 		Load:    <-cpuLoad,
 		Speed:   <-cpuSpeed,
 		Cores:   <-cpuCores,
@@ -62,14 +61,14 @@ func getCPUModel(response chan<- string) {
 }
 
 // getCPULoad retrieves the CPU load as a percentage string.
-func getCPULoad(response chan<- string) {
+func getCPULoad(response chan<- float64) {
 	percent, err := cpu.Percent(time.Millisecond, false)
 	if err != nil {
-		response <- err.Error()
+		response <- 0
 		fmt.Print(err.Error())
 		return
 	}
-	response <- fmt.Sprintf("%.2f%%", percent[0])
+	response <- percent[0]
 }
 
 // getCPUSpeed retrieves the CPU speed in MHz.
@@ -99,5 +98,6 @@ func getCPUCores(response chan<- int32) {
 		response <- 0
 		return
 	}
+
 	response <- cpuInfo[0].Cores / 2
 }

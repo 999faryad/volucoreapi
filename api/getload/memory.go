@@ -13,24 +13,19 @@ type MemoryObject struct {
 	Available uint64
 }
 
-func MemoryStat() MemoryObject {
-	mbuf := make(chan uint64)
-	mtotal := make(chan uint64)
-	mfree := make(chan uint64)
-	mused := make(chan uint64)
-	mswap := make(chan uint64)
-	mavailable := make(chan uint64)
+func MemoryStat() *MemoryObject {
+	mBuffered := make(chan uint64)
+	mTotal := make(chan uint64)
+	mFree := make(chan uint64)
+	mUsed := make(chan uint64)
+	mSwap := make(chan uint64)
+	mAvailable := make(chan uint64)
 
-	defer close(mbuf)
-	defer close(mtotal)
-	defer close(mfree)
-	defer close(mused)
-	defer close(mswap)
-	defer close(mavailable)
+	defer CloseChannels(mBuffered, mTotal, mFree, mUsed, mSwap, mAvailable)
 
 	memory, err := mem.VirtualMemory()
 	if err != nil {
-		return MemoryObject{
+		return &MemoryObject{
 			Buffered:  0,
 			Total:     0,
 			Free:      0,
@@ -40,20 +35,20 @@ func MemoryStat() MemoryObject {
 		}
 	}
 
-	go getMemoryBuffered(mbuf, memory)
-	go getMemoryTotal(mtotal, memory)
-	go getMemoryFree(mfree, memory)
-	go getMemoryUsed(mused, memory)
-	go getMemorySwap(mswap, memory)
-	go getMemoryAvailable(mavailable, memory)
+	go getMemoryBuffered(mBuffered, memory)
+	go getMemoryTotal(mTotal, memory)
+	go getMemoryFree(mFree, memory)
+	go getMemoryUsed(mUsed, memory)
+	go getMemorySwap(mSwap, memory)
+	go getMemoryAvailable(mAvailable, memory)
 
-	return MemoryObject{
-		Buffered:  <-mbuf,
-		Total:     <-mtotal,
-		Free:      <-mfree,
-		Used:      <-mused,
-		Swap:      <-mswap,
-		Available: <-mavailable,
+	return &MemoryObject{
+		Buffered:  <-mBuffered,
+		Total:     <-mTotal,
+		Free:      <-mFree,
+		Used:      <-mUsed,
+		Swap:      <-mSwap,
+		Available: <-mAvailable,
 	}
 }
 
