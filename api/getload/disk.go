@@ -19,49 +19,45 @@ type DiskObject struct {
 	Disk []Disks
 }
 
-func DiskStat() DiskObject {
+func DiskStat() *DiskObject {
 	partitions, _ := disk.Partitions(false)
 	var disks []Disks
 
-	ddevice := make(chan string)
-	diops := make(chan uint64)
-	dtotal := make(chan uint64)
-	dfree := make(chan uint64)
-	dused := make(chan uint64)
+	dDevice := make(chan string)
+	dIOPS := make(chan uint64)
+	dTotal := make(chan uint64)
+	dFree := make(chan uint64)
+	dUsed := make(chan uint64)
 
-	defer close(ddevice)
-	defer close(diops)
-	defer close(dtotal)
-	defer close(dfree)
-	defer close(dused)
+	defer CloseChannels(dDevice, dIOPS, dTotal, dFree, dUsed)
 
 	var wg sync.WaitGroup
 	for _, partition := range partitions {
-		if !strings.HasPrefix(partition.Device, "/dev/sd") {
+		if !strings.HasPrefix(partition.Device, "/dev/sd") || !strings.HasPrefix(partition.Device, "/dev/nvme") {
 			continue
 		}
 
 		wg.Add(1)
 		go func(partition disk.PartitionStat) {
 			defer wg.Done()
-			go getDiskDevice(ddevice, partition)
-			go getDiskIOPS(diops, partition)
-			go getDiskTotal(dtotal, partition)
-			go getDiskFree(dfree, partition)
-			go getDiskUsed(dused, partition)
+			go getDiskDevice(dDevice, partition)
+			go getDiskIOPS(dIOPS, partition)
+			go getDiskTotal(dTotal, partition)
+			go getDiskFree(dFree, partition)
+			go getDiskUsed(dUsed, partition)
 			disks = append(disks, Disks{
-				Device: <-ddevice,
-				IOPS:   <-diops,
-				Total:  <-dtotal,
-				Free:   <-dfree,
-				Used:   <-dused,
+				Device: <-dDevice,
+				IOPS:   <-dIOPS,
+				Total:  <-dTotal,
+				Free:   <-dFree,
+				Used:   <-dUsed,
 			})
 		}(partition)
 
 		wg.Wait()
 	}
 
-	return DiskObject{Disk: disks}
+	return &DiskObject{Disk: disks}
 }
 
 func getDiskDevice(response chan<- string, part disk.PartitionStat) {
@@ -86,8 +82,8 @@ func getDiskTotal(response chan<- uint64, part disk.PartitionStat) {
 		response <- 0
 		return
 	}
-	response <- device.Total
 
+	response <- device.Total
 }
 
 func getDiskFree(response chan<- uint64, part disk.PartitionStat) {
@@ -97,6 +93,7 @@ func getDiskFree(response chan<- uint64, part disk.PartitionStat) {
 		response <- 0
 		return
 	}
+
 	response <- device.Free
 }
 

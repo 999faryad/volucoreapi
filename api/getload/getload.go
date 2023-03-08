@@ -3,21 +3,81 @@ package getload
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 )
 
+type ChanTypes interface {
+	int | int32 | int64 | string | float64 | float32
+}
+
+type RequestData struct {
+	Show []string `json:"show"`
+}
+
 type Load struct {
-	CPU       CPUObject
-	Disk      DiskObject
-	Memory    MemoryObject
-	Processes ProcObject
+	CPU       *CPUObject    `json:"CPU,omitempty"`
+	Disk      *DiskObject   `json:"Disk,omitempty"`
+	Memory    *MemoryObject `json:"Memory,omitempty"`
+	Processes *ProcObject   `json:"Processes,omitempty"`
 }
 
 func GetLoad(writer http.ResponseWriter, request *http.Request) {
-	load := Load{CPU: CPUStat(), Disk: DiskStat(), Memory: MemoryStat(), Processes: ProcStat()}
+
+	var payload RequestData
+	load := &Load{}
+
+	reqBody, err := io.ReadAll(request.Body)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	err = json.Unmarshal(reqBody, &payload)
+	if err != nil {
+		log.Println(err.Error())
+	}
+	if len(payload.Show) == 0 {
+		load = &Load{
+			CPU:       CPUStat(),
+			Memory:    MemoryStat(),
+			Disk:      DiskStat(),
+			Processes: ProcStat(),
+		}
+	}
+
+	for _, data := range payload.Show {
+		switch data {
+		case "cpu":
+			load.CPU = CPUStat()
+		case "disk":
+			load.Disk = DiskStat()
+		case "memory":
+			load.Memory = MemoryStat()
+		case "processes":
+			load.Processes = ProcStat()
+		default:
+			break
+		}
+	}
+
+	_, err = fmt.Fprintln(writer, load.out())
+	if err != nil {
+		return
+	}
+
+}
+func (load Load) out() string {
 	response, err := json.Marshal(load)
 	if err != nil {
-		fmt.Fprint(writer, err.Error())
+		log.Println("Failed to Marshal Request")
 	}
-	fmt.Fprint(writer, string(response))
+	return string(response)
+}
+
+func CloseChannels(chans ...interface{}) {
+	for _, ch := range chans {
+		if c, ok := ch.(chan interface{}); ok {
+			close(c)
+		}
+	}
 }

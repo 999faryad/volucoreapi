@@ -16,41 +16,39 @@ type ProcObject struct {
 	Processes []Process
 }
 
-func ProcStat() ProcObject {
+func ProcStat() *ProcObject {
 
-	prunning := make(chan bool)
-	ppid := make(chan int32)
-	pname := make(chan string)
+	pRunning := make(chan bool)
+	pPID := make(chan int32)
+	pName := make(chan string)
 
-	defer close(prunning)
-	defer close(ppid)
-	defer close(pname)
+	defer CloseChannels(pRunning, pPID, pName)
 
-	var procList []Process
-
+	var processList []Process
 	processes, err := process.Processes()
 	if err != nil {
 		log.Print(err.Error())
-		return ProcObject{Processes: procList}
+		return &ProcObject{Processes: processList}
 	}
+
 	var wg sync.WaitGroup
 	for _, proc := range processes[1:] {
 		wg.Add(1)
 		go func(proc *process.Process) {
 			defer wg.Done()
-			go getRunningProc(prunning, proc)
-			go getProcPID(ppid, proc)
-			go getProcName(pname, proc)
-			procList = append(procList, Process{
-				PID:     <-ppid,
-				Running: <-prunning,
-				Name:    <-pname,
+			go getRunningProc(pRunning, proc)
+			go getProcPID(pPID, proc)
+			go getProcName(pName, proc)
+			processList = append(processList, Process{
+				PID:     <-pPID,
+				Running: <-pRunning,
+				Name:    <-pName,
 			})
 		}(proc)
 		wg.Wait()
 	}
 
-	return ProcObject{Processes: procList}
+	return &ProcObject{Processes: processList}
 }
 
 func getRunningProc(response chan<- bool, proc *process.Process) {
@@ -60,6 +58,7 @@ func getRunningProc(response chan<- bool, proc *process.Process) {
 		response <- false
 		return
 	}
+
 	response <- running
 }
 
@@ -74,5 +73,6 @@ func getProcName(response chan<- string, proc *process.Process) {
 		response <- ""
 		return
 	}
+
 	response <- name
 }
