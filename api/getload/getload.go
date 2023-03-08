@@ -32,10 +32,8 @@ func GetLoad(writer http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		log.Println(err.Error())
 	}
-	err = json.Unmarshal(reqBody, &payload)
-	if err != nil {
-		log.Println(err.Error())
-	}
+	json.Unmarshal(reqBody, &payload)
+
 	if len(payload.Show) == 0 {
 		load = &Load{
 			CPU:       CPUStat(),

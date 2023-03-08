@@ -33,7 +33,7 @@ func DiskStat() *DiskObject {
 
 	var wg sync.WaitGroup
 	for _, partition := range partitions {
-		if !strings.HasPrefix(partition.Device, "/dev/sd") || !strings.HasPrefix(partition.Device, "/dev/nvme") {
+		if !strings.HasPrefix(partition.Device, "/dev/sd") && !strings.HasPrefix(partition.Device, "/dev/nvme") {
 			continue
 		}
 

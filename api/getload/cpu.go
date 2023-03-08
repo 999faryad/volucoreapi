@@ -22,7 +22,6 @@ type CPUObject struct {
 // CPUStat returns a CPUObject with CPU model name, speed, and load.
 func CPUStat() *CPUObject {
 
-	fmt.Println("CPU")
 	// Use channels to concurrently retrieve CPU model name, speed, and load.
 	cpuModel := make(chan string)
 	cpuLoad := make(chan float64)
