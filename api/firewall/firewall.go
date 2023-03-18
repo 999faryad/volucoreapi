@@ -2,12 +2,21 @@ package firewall
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
 const (
-	INPUTCHAIN string = "INPUT"
+	INPUTCHAIN   string = "INPUT"
+	OUTPUTCHAIN  string = "OUTPUT"
+	FORWARDCHAIN string = "FORWARD"
+
+	FILTERTABLE string = "filter"
 )
+
+type RuleResponse struct {
+	Rules []string `json:"rules"`
+}
 
 type Rule struct {
 	SAddr    string `json:"saddr"`
@@ -21,6 +30,10 @@ type Response struct {
 	Message string
 }
 
+type ResponseStructs interface {
+	RuleResponse | Response
+}
+
 func GetRequestData(request *http.Request) *Rule {
 	rule := &Rule{}
 	err := json.NewDecoder(request.Body).Decode(&rule)
@@ -30,12 +43,12 @@ func GetRequestData(request *http.Request) *Rule {
 	return rule
 }
 
-func (r *Response) GetJsonResponse() string {
+func RespondJSON[T ResponseStructs](writer http.ResponseWriter, r T) {
 
 	response, err := json.Marshal(&r)
 	if err != nil {
-		return ""
+		fmt.Fprintf(writer, "Unable to Marshal JSON!")
 	}
-	return string(response)
+	fmt.Fprintf(writer, string(response))
 
 }
