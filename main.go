@@ -2,8 +2,12 @@ package main
 
 import (
 	"VoluCore/api"
+	"log"
 )
 
 func main() {
-	api.OpenWebserver()
+	err := api.OpenWebserver()
+	if err != nil {
+		log.Fatalf("An Error Occured while Opening Webserver\nError:\n%v", err.Error())
+	}
 }
