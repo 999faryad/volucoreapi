@@ -23,13 +23,13 @@ func DiskStat() *DiskObject {
 	partitions, _ := disk.Partitions(false)
 	var disks []Disks
 
-	dDevice := make(chan string)
-	dIOPS := make(chan uint64)
-	dTotal := make(chan uint64)
-	dFree := make(chan uint64)
-	dUsed := make(chan uint64)
+	diskDevice := make(chan string)
+	diskIOPS := make(chan uint64)
+	diskTotal := make(chan uint64)
+	diskFree := make(chan uint64)
+	diskUsed := make(chan uint64)
 
-	defer CloseChannels(dDevice, dIOPS, dTotal, dFree, dUsed)
+	defer CloseChannels(diskDevice, diskIOPS, diskTotal, diskFree, diskUsed)
 
 	var wg sync.WaitGroup
 	for _, partition := range partitions {
@@ -40,17 +40,17 @@ func DiskStat() *DiskObject {
 		wg.Add(1)
 		go func(partition disk.PartitionStat) {
 			defer wg.Done()
-			go getDiskDevice(dDevice, partition)
-			go getDiskIOPS(dIOPS, partition)
-			go getDiskTotal(dTotal, partition)
-			go getDiskFree(dFree, partition)
-			go getDiskUsed(dUsed, partition)
+			go getDiskDevice(diskDevice, partition)
+			go getDiskIOPS(diskIOPS, partition)
+			go getDiskTotal(diskTotal, partition)
+			go getDiskFree(diskFree, partition)
+			go getDiskUsed(diskUsed, partition)
 			disks = append(disks, Disks{
-				Device: <-dDevice,
-				IOPS:   <-dIOPS,
-				Total:  <-dTotal,
-				Free:   <-dFree,
-				Used:   <-dUsed,
+				Device: <-diskDevice,
+				IOPS:   <-diskIOPS,
+				Total:  <-diskTotal,
+				Free:   <-diskFree,
+				Used:   <-diskUsed,
 			})
 		}(partition)
 
