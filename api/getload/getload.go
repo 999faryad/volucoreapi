@@ -8,10 +8,6 @@ import (
 	"net/http"
 )
 
-type ChanTypes interface {
-	int | int32 | int64 | string | float64 | float32
-}
-
 type RequestData struct {
 	Show []string `json:"show"`
 }
