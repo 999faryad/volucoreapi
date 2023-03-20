@@ -20,7 +20,6 @@ type Load struct {
 }
 
 func GetLoad(writer http.ResponseWriter, request *http.Request) {
-
 	var payload RequestData
 	load := &Load{}
 
@@ -28,6 +27,7 @@ func GetLoad(writer http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		log.Println(err.Error())
 	}
+
 	json.Unmarshal(reqBody, &payload)
 
 	if len(payload.Show) == 0 {
@@ -54,12 +54,10 @@ func GetLoad(writer http.ResponseWriter, request *http.Request) {
 		}
 	}
 
-	_, err = fmt.Fprintln(writer, load.out())
-	if err != nil {
-		return
-	}
+	fmt.Fprintln(writer, load.out())
 
 }
+
 func (load Load) out() string {
 	response, err := json.Marshal(load)
 	if err != nil {
