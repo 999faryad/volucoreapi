@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/coreos/go-iptables v0.6.0
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/shirou/gopsutil v3.21.11+incompatible
 )
 
